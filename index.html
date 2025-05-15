@@ -1,62 +1,181 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Casino Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        .slots { font-size: 50px; margin: 20px; }
-        button { padding: 10px 20px; font-size: 16px; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #f8c537;
+            margin-bottom: 30px;
+        }
+        .slots-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 30px 0;
+        }
+        .slot {
+            width: 60px;
+            height: 60px;
+            background: #16213e;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        button {
+            background: #f8c537;
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(248, 197, 55, 0.3);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .result {
+            margin-top: 20px;
+            min-height: 60px;
+            font-size: 18px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .win {
+            color: #f8c537;
+            font-weight: bold;
+            animation: pulse 0.5s infinite alternate;
+        }
+        @keyframes pulse {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body>
-    <h1>🎰 Casino Mini App</h1>
-    <div class="slots" id="slots">🍒 | 🍒 | 🍒</div>
-    <button onclick="spin()">SPIN!</button>
+    <div class="container">
+        <h1>🎰 Casino Slots</h1>
+        
+        <div class="slots-container">
+            <div class="slot" id="slot1">🍒</div>
+            <div class="slot" id="slot2">🍋</div>
+            <div class="slot" id="slot3">🍊</div>
+        </div>
+        
+        <button id="spinBtn">SPIN!</button>
+        
+        <div class="result" id="result"></div>
+    </div>
 
     <script>
+        // Символы и их веса (7 выпадает реже)
         const symbols = ["🍒", "🍋", "🍊", "🍉", "7️⃣"];
-        const weights = [30, 30, 30, 25, 5]; // Шансы (5/120 ≈ 4.17% для 7️⃣)
-
+        const weights = [30, 30, 30, 25, 5]; // 5/120 ≈ 4.17% для 7️⃣
+        
+        // Выигрышные комбинации
+        const winCombinations = {
+            "7️⃣7️⃣7️⃣": "🎉 JACKPOT! 1000 coins!",
+            "🍒🍒🍒": "🏆 Three cherries! 100 coins!",
+            "🍋🍋🍋": "🍋 Three lemons! 50 coins!",
+            "🍊🍊🍊": "🍊 Three oranges! 30 coins!",
+            "🍉🍉🍉": "🍉 Three watermelons! 20 coins!"
+        };
+        
+        // Элементы DOM
+        const slot1 = document.getElementById('slot1');
+        const slot2 = document.getElementById('slot2');
+        const slot3 = document.getElementById('slot3');
+        const spinBtn = document.getElementById('spinBtn');
+        const resultDiv = document.getElementById('result');
+        
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Раскрываем на весь экран
+        
+        // Функция для взвешенного случайного выбора
+        function getRandomSymbol() {
+            const total = weights.reduce((a, b) => a + b, 0);
+            let random = Math.random() * total;
+            for (let i = 0; i < weights.length; i++) {
+                if (random < weights[i]) return symbols[i];
+                random -= weights[i];
+            }
+            return symbols[0];
+        }
+        
+        // Анимация вращения
         function spin() {
-            // Анимация прокрутки
+            spinBtn.disabled = true;
+            resultDiv.textContent = '';
+            resultDiv.className = 'result';
+            
             let spins = 0;
-            const interval = setInterval(() => {
-                const randomSymbols = [
-                    symbols[Math.floor(Math.random() * symbols.length)],
-                    symbols[Math.floor(Math.random() * symbols.length)],
-                    symbols[Math.floor(Math.random() * symbols.length)]
-                ];
-                document.getElementById("slots").textContent = randomSymbols.join(" | ");
+            const spinInterval = setInterval(() => {
+                slot1.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                slot2.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                slot3.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                
                 spins++;
-                if (spins > 10) {
-                    clearInterval(interval);
+                if (spins > 15) {
+                    clearInterval(spinInterval);
                     showResult();
                 }
             }, 100);
         }
-
+        
+        // Показ результата
         function showResult() {
-            const result = [];
-            for (let i = 0; i < 3; i++) {
-                result.push(symbols[getRandomWeightedIndex()]);
+            const result = [
+                getRandomSymbol(),
+                getRandomSymbol(),
+                getRandomSymbol()
+            ];
+            
+            slot1.textContent = result[0];
+            slot2.textContent = result[1];
+            slot3.textContent = result[2];
+            
+            const resultStr = result.join('');
+            const winMessage = winCombinations[resultStr];
+            
+            if (winMessage) {
+                resultDiv.innerHTML = `<span class="win">${winMessage}</span>`;
+                // Можно отправить данные о победе в бота
+                tg.sendData(JSON.stringify({ win: true, combination: resultStr }));
+            } else {
+                resultDiv.textContent = "Try again!";
             }
-            document.getElementById("slots").textContent = result.join(" | ");
-
-            if (result.every(sym => sym === "7️⃣")) {
-                Telegram.WebApp.showAlert("JACKPOT! 🎉");
-            }
+            
+            spinBtn.disabled = false;
         }
-
-        function getRandomWeightedIndex() {
-            const total = weights.reduce((a, b) => a + b, 0);
-            let random = Math.random() * total;
-            for (let i = 0; i < weights.length; i++) {
-                if (random < weights[i]) return i;
-                random -= weights[i];
-            }
-            return 0;
-        }
+        
+        // Обработчик кнопки
+        spinBtn.addEventListener('click', spin);
+        
+        // Первоначальная инициализация
+        spin();
     </script>
 </body>
 </html>
