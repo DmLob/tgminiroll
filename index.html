@@ -163,7 +163,7 @@
             if (winMessage) {
                 resultDiv.innerHTML = `<span class="win">${winMessage}</span>`;
                 // Можно отправить данные о победе в бота
-                tg.sendData(JSON.stringify({ win: true, combination: resultStr }));
+                // tg.sendData(JSON.stringify({ win: true, combination: resultStr }));
             } else {
                 resultDiv.textContent = "Try again!";
             }
